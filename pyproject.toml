@@ -1,0 +1,30 @@
+[tool.poetry]
+name = "gapify-task"
+version = "0.1.0"
+description = ""
+authors = ["Saman Dehestani <drippypale@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+langgraph = "^0.2.68"
+langchain-openai = "^0.3.3"
+pydantic = "^2.10.6"
+langchain = "^0.3.17"
+langchain-community = "^0.3.16"
+chromadb = "^0.6.3"
+playwright = "^1.49.1"
+jdatetime = "^5.2.0"
+pandas = "^2.2.3"
+beautifulsoup4 = "^4.12.3"
+langchain-chroma = "^0.2.1"
+gradio = "^5.14.0"
+python-dotenv = "^1.0.1"
+
+
+[tool.poetry.group.dev.dependencies]
+notebook = "^7.3.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
