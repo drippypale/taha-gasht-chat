@@ -2,6 +2,10 @@
 
 A conversational AI assistant for TahaGasht travel agency that helps users find flights and get travel information using a multi-agent system built with LangGraph.
 
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/746d589c-ce1c-4675-9ecf-8c6527969787" alt="workflow" height=600 />
+</p>
+
 ## Features
 
 - Flight search capabilities
