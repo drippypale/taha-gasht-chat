@@ -7,7 +7,7 @@ from agents.orchestrator.state import State
 
 
 def generator_node(state: State) -> Command[Literal["__end__"]]:
-    llm = ChatOpenAI(model="gpt-4o")
+    llm = ChatOpenAI(model="gpt-4o", temperature=0)
 
     generator_agent = create_react_agent(
         model=llm,
@@ -18,6 +18,10 @@ def generator_node(state: State) -> Command[Literal["__end__"]]:
         to the user.
         If error is None, based on the user's task which is either flight_search or blog_info,
         use the proper context (flight_results or blog_results) to generate the response.
+
+        If there are any links in the extracted information, make sure to include them in the response.
+        
+        You must only answer based on the extracted information from the previous agents.
         
         Always use the user's initial query language to generate the response.""",
     )
