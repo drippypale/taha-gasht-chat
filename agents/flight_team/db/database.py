@@ -15,7 +15,7 @@ class Database:
             cls._instance._initialize(*args, **kwargs)
         return cls._instance
 
-    def _initialize(self, in_memory: bool = True):
+    def _initialize(self, in_memory: bool = False):
         """Initialize the database connection and tables"""
         if in_memory:
             self.conn = sqlite3.connect(":memory:", check_same_thread=False)
