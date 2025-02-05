@@ -1,8 +1,10 @@
 from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, START
+from agents.flight_team.db.database import Database
 from agents.orchestrator.state import State
 from agents.orchestrator.supervisor import create_supervisor
 from agents.flight_team.agents import (
+    flight_team_db_node,
     flight_team_node,
     flight_team_search_node,
     flight_team_prompt_node,
@@ -16,6 +18,9 @@ from agents.generator.agents import generator_node
 
 
 def create_workflow():
+    # Initialize database
+    Database(in_memory=False)
+
     llm = ChatOpenAI(model="gpt-4o")
 
     workflow = StateGraph(State)
@@ -27,6 +32,7 @@ def create_workflow():
 
     workflow.add_node("flight_team", flight_team_node)
     workflow.add_node("flight_team_prompt", flight_team_prompt_node)
+    workflow.add_node("flight_team_db", flight_team_db_node)
     workflow.add_node("flight_team_search", flight_team_search_node)
 
     workflow.add_node("blog_team", blog_team_node)

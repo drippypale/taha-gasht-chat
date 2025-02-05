@@ -1,8 +1,7 @@
 from datetime import datetime
 import jdatetime
 from typing import Literal
-from pydantic import BaseModel, Field
-from typing_extensions import Optional, TypedDict
+from typing_extensions import TypedDict
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
@@ -10,6 +9,7 @@ from langgraph.types import Command
 from agents.flight_team.tools import (
     search_available_flights,
     query_flight_database,
+    convert_date_to_gregorian,
 )
 from agents.orchestrator.state import State
 import json
@@ -26,15 +26,13 @@ def flight_team_db_node(
         flight_number: str
         last_updated: str
 
-    class FlightNodeResult(BaseModel):
-        results: Optional[list[FlightResult]] = Field(
-            description="List of flight results found in the database. If no results found, return an empty list."
-        )
+    class FlightNodeResult(TypedDict):
+        results: list[FlightResult]
 
     # Create the flight database agent
     flight_db_agent = create_react_agent(
         model=llm,
-        tools=[query_flight_database],
+        tools=[query_flight_database, convert_date_to_gregorian],
         prompt=f"""You are a flight database specialist. Your task is to query the flights database 
         to find matching flights. Use SQL queries to search the database.
         
@@ -43,18 +41,25 @@ def flight_team_db_node(
             airline TEXT NOT NULL,
             departure_datetime TEXT NOT NULL,
             flight_number TEXT NOT NULL,
+            origin_city TEXT NOT NULL,
             origin_code TEXT NOT NULL,
+            dest_city TEXT NOT NULL,
             dest_code TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         
-        Today's date is: {datetime.now().strftime("%Y-%m-%d")} or in Jalaali calendar: {jdatetime.datetime.now().strftime("%Y-%m-%d")}
+        Today's date is: 
+        - Gregorian calendar: {datetime.now().strftime("%Y-%m-%d")}({datetime.now().strftime("%A, %d %B %Y")})
+        - Jalaali calendar: {jdatetime.datetime.now().strftime("%Y-%m-%d")}({jdatetime.datetime.now().strftime("%A, %d %B %Y")})
+        Note that the city names MUST be in English.
         Your response should be based on the query_flight_database tool function.
         
         If no flights found IN THE DATABASE, return an empty list. DO NOT GENERATE FROM YOUR OWN KNOWLEDGE.
         """,
-        state_schema=State,
-        response_format=FlightNodeResult,
+        response_format=(
+            "Your task is to format the response in the given structure. If there are no results, return an empty list.",
+            FlightNodeResult,
+        ),
     )
 
     try:
@@ -62,6 +67,12 @@ def flight_team_db_node(
         if result["structured_response"]["results"]:
             return Command(
                 update={
+                    "messages": [
+                        AIMessage(
+                            content=f"Here are the available flights:\n{json.dumps(result['structured_response']['results'], indent=2)}",
+                            name="Flight-Team-Agent",
+                        )
+                    ],
                     "flight_results": result["structured_response"]["results"],
                     "task_history": ["flight_team_db"],
                     "next_step": None,
@@ -105,7 +116,7 @@ def flight_team_search_node(state: State) -> Command[Literal["generator"]]:
 
     flight_search_agent = create_react_agent(
         model=llm,
-        tools=[search_available_flights],
+        tools=[search_available_flights, convert_date_to_gregorian],
         prompt=f"""You are a flight search specialist. Your task is to search real-time flight 
         availability. 
 
@@ -155,7 +166,7 @@ def flight_team_node(state: State) -> Command[Literal["flight_team_prompt"]]:
     )
 
 
-def flight_team_prompt_node(state: State) -> Command[Literal["flight_team_search"]]:
+def flight_team_prompt_node(state: State) -> Command[Literal["flight_team_db"]]:
     """Process and refine the user query for flight team"""
     llm = ChatOpenAI(model="gpt-4o")
 
@@ -186,5 +197,5 @@ def flight_team_prompt_node(state: State) -> Command[Literal["flight_team_search
             ],
             "task_history": ["flight_team_prompt"],
         },
-        goto="flight_team_search",
+        goto="flight_team_db",
     )
