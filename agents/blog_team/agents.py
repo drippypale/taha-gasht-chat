@@ -38,10 +38,10 @@ def blog_team_rag_node(state: State) -> Command[Literal["generator"]]:
     query = state["messages"][-1].content
     retrieved_docs = vectorstore.similarity_search(query)
 
-    context = "\n\n".join(
-        f"URL: {doc.metadata['url']}\nContent: {doc.page_content}"
-        for doc in retrieved_docs
-    )
+    context = ""
+    for doc in retrieved_docs:
+        flat_metadata = "\n".join([f"{k}:{v}" for k, v in doc.metadata.items()])
+        context += f"URL: {doc.metadata['url']}\nContent: {doc.page_content}\n{flat_metadata}\n"
 
     messages = prompt.invoke({"question": query, "context": context})
 
