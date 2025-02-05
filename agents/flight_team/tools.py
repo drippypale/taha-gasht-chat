@@ -1,5 +1,6 @@
 from typing import Annotated, List
 from langchain_core.tools import tool
+from agents.flight_team.crawl.utils.date import convert_to_gregorian
 from agents.flight_team.db import Database
 from agents.flight_team import search_flights
 import asyncio
@@ -50,6 +51,27 @@ def query_flight_database(
                     dest_code TEXT NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
+
+    Note that the city names MUST be in English.
     """
     db = Database()
     return db.query_flights(query)
+
+
+@tool
+def convert_date_to_gregorian(
+    date_str: Annotated[str, "Date string in 'YYYY-MM-DD' format"],
+) -> str:
+    """
+    Convert a date string from Jalali to Gregorian if necessary.
+
+    Args:
+        date_str (str): Date string in 'YYYY-MM-DD' format.
+
+    Returns:
+        str: Gregorian date string in 'YYYY-MM-DD' format.
+
+    Raises:
+        DateConversionError: If the date format is invalid or conversion fails.
+    """
+    return convert_to_gregorian(date_str)
